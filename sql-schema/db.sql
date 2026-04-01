@@ -132,7 +132,7 @@ CREATE TABLE "relatorios_semanais" (
   "pontuacao" Int NOT NULL DEFAULT 0, -- Calculado como: (minutos_leve * 1) + (minutos_moderado * 2) + (minutos_intenso * 3)
   "met_total" Decimal NOT NULL DEFAULT 0,
   "meta_atingida" Boolean NOT NULL DEFAULT false,
-  "editavel_ate" TIMESTAMP NOT NULL DEFAULT (now() + prazo_edicao_config()), -- Indica até quando se é possível editar
+  "editavel_ate" TIMESTAMP NOT NULL, -- Calculado via trigger: data_fim_semana + prazo_edicao_config()
   "gerado_em" TIMESTAMP NOT NULL DEFAULT (now()),
   "criado_em" TIMESTAMP NOT NULL DEFAULT (now()),
   "atualizado_em" TIMESTAMP NOT NULL DEFAULT (now())
@@ -146,6 +146,7 @@ CREATE TABLE "relatorios_diarios" (
   "eva_dor" Int,
   "fadiga_percebida" Int,
   "observacoes" TEXT,
+  "turno" turno_dia NOT NULL,
   "criado_em" TIMESTAMP NOT NULL DEFAULT (now()),
   "atualizado_em" TIMESTAMP NOT NULL DEFAULT (now()),
   -- tmb tem que ter os minutos por intensidade, mas isso é atualizado via trigger toda vez que um registro de atividade é inserido/atualizado/excluído
@@ -183,7 +184,7 @@ CREATE TABLE "lembretes" (
   "usuario_id" Int NOT NULL,
   "mensagem" TEXT NOT NULL,
   "horario" TIME NOT NULL,
-  "dias_da_semana" TEXT,
+  "dias_da_semana" INT[], -- Array de 0-6 (Domingo-Sábado)
   "ativo" Boolean NOT NULL DEFAULT true,
   "criado_em" TIMESTAMP NOT NULL DEFAULT (now()),
   "atualizado_em" TIMESTAMP NOT NULL DEFAULT (now())
@@ -207,13 +208,17 @@ CREATE TABLE "notificacoes" (
   "titulo" TEXT NOT NULL,
   "mensagem" TEXT NOT NULL,
   "lida_em" TIMESTAMP,
-  "enviada_em" TIMESTAMP NOT NULL,
+  "enviada_em" TIMESTAMP NOT NULL DEFAULT (now()),
   "criado_em" TIMESTAMP NOT NULL DEFAULT (now())
 );
 
 CREATE UNIQUE INDEX ON "atividades_cadastradas" ("nome", "intensidade_padrao");
 
 CREATE UNIQUE INDEX ON "relatorios_semanais" ("usuario_id", "data_inicio_semana");
+
+CREATE UNIQUE INDEX ON "relatorios_diarios" ("usuario_id", "data_referencia");
+
+CREATE UNIQUE INDEX ON "sessoes_triagem" ("usuario_id", "fase") WHERE ativa = true;
 
 CREATE UNIQUE INDEX ON "metas_semanais" ("usuario_id", "data_inicio_semana");
 
@@ -223,7 +228,7 @@ COMMENT ON COLUMN "usuarios"."email" IS 'RF1';
 
 COMMENT ON COLUMN "usuarios"."telefone" IS 'RF1';
 
-COMMENT ON COLUMN "usuarios"."idade" IS 'RF1';
+COMMENT ON COLUMN "usuarios"."data_nascimento" IS 'RF1';
 
 COMMENT ON COLUMN "usuarios"."senha_hash" IS 'RF5 - Alfanumérica. Null se login via Google';
 
@@ -339,3 +344,28 @@ ALTER TABLE "lembretes" ADD FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("i
 ALTER TABLE "descobertas" ADD FOREIGN KEY ("autor_id") REFERENCES "usuarios" ("id_usuario") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "notificacoes" ADD FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("id_usuario") DEFERRABLE INITIALLY IMMEDIATE;
+
+-- Índices para FKs (Melhoria de Performance)
+CREATE INDEX ON "relatorios_semanais" ("usuario_id");
+CREATE INDEX ON "relatorios_diarios" ("usuario_id");
+CREATE INDEX ON "relatorios_diarios" ("relatorio_semanal_id");
+CREATE INDEX ON "registros_atividade" ("relatorio_diario_id");
+CREATE INDEX ON "sessoes_triagem" ("usuario_id");
+CREATE INDEX ON "notificacoes" ("usuario_id");
+
+-- Trigger para automatizar o cálculo de 'editavel_ate' em relatórios semanais
+CREATE OR REPLACE FUNCTION set_editavel_ate_semanal() 
+RETURNS trigger AS $$
+BEGIN
+  NEW.editavel_ate := NEW.data_fim_semana + prazo_edicao_config();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_set_editavel_ate_semanal
+BEFORE INSERT OR UPDATE OF data_fim_semana ON "relatorios_semanais"
+FOR EACH ROW EXECUTE FUNCTION set_editavel_ate_semanal();
+
+-- NOTA: A lógica de 'meta_atingida' deve ser implementada via trigger na tabela 'registros_atividade'
+-- ou via aplicação, cruzando 'relatorios_semanais.minutos_totais' com 'metas_semanais.meta_minutos'.
+COMMENT ON COLUMN "relatorios_semanais"."meta_atingida" IS 'Calculado dinamicamente via trigger baseado nos minutos ativos da semana';
