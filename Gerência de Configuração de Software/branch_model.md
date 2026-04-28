@@ -1,12 +1,8 @@
 # Branch Model
 
-## GitHub Flow
+## GitHub Flow com branch de integração
 
-O GitHub Flow é um modelo de fluxo de trabalho (workflow) para o desenvolvimento de software utilizando o sistema de controle de versão Git e a plataforma GitHub.
-
-Esse modelo organiza o desenvolvimento por meio do uso de **branches temporárias**, **Pull Requests** e **revisões de código**, permitindo que equipes trabalhem de forma colaborativa e organizada.
-
-Os princípios-chave do GitHub Flow são apresentados a seguir.
+O Vivasso adota uma variação do GitHub Flow, acrescida de uma branch de integração (`develop`) que serve como camada de validação antes que o código chegue à `main`.
 
 ---
 
@@ -22,9 +18,9 @@ Os desenvolvedores são encorajados a realizar commits frequentes em suas branch
 
 ### Pull Requests
 
-Quando uma funcionalidade ou correção é concluída em uma branch, é aberto um **Pull Request (PR)** para mesclar as alterações na branch principal do repositório.
+Quando uma funcionalidade ou correção é concluída em uma branch, é aberto um **Pull Request (PR)** para mesclar as alterações na branch de destino.
 
-O Pull Request permite iniciar uma discussão com outros membros da equipe, revisar o código e fornecer feedback antes da integração das alterações na branch principal.
+O Pull Request permite iniciar uma discussão com outros membros da equipe, revisar o código e fornecer feedback antes da integração das alterações.
 
 ### Revisões de código
 
@@ -38,23 +34,36 @@ A revisão de código é uma etapa importante para garantir a qualidade do softw
 
 O GitHub Flow foi escolhido como modelo de fluxo de trabalho devido à sua simplicidade, clareza e eficiência no desenvolvimento colaborativo.
 
-Sua estrutura é fácil de compreender e adotar, pois não exige processos complexos ou múltiplas branches permanentes. Além disso, sua flexibilidade permite que equipes trabalhem em paralelo, desenvolvendo funcionalidades independentes em branches separadas, o que facilita a colaboração e reduz conflitos de código.
-
-Outro fator importante é a colaboração proporcionada pelo uso de Pull Requests. Por meio desse mecanismo, os desenvolvedores podem compartilhar suas alterações, receber feedback e aprimorar a qualidade do código antes de integrá-lo à branch principal.
-
-Além disso, o GitHub Flow fornece rastreabilidade e um histórico detalhado de cada funcionalidade ou correção desenvolvida em branches separadas. Isso facilita o acompanhamento do progresso do projeto, a identificação de alterações e a possibilidade de reverter mudanças quando necessário.
-
-Por fim, o modelo também favorece a implantação contínua das alterações assim que elas são concluídas e mescladas na branch principal, acelerando a entrega de novas funcionalidades e correções.
+A adição da branch `develop` foi motivada pela necessidade de uma camada de integração entre as branches temporárias e a `main`. Como o projeto possui múltiplas frentes em desenvolvimento paralelo, ter um ponto de convergência antes da versão estável reduz o risco de integração e permite que o código seja validado em conjunto antes de ser considerado pronto para implantação.
 
 ---
 
 # Estrutura de branches
 
-O projeto utiliza uma única branch principal chamada **`main`**, que contém a versão estável do código.
+| Branch | Papel |
+|---|---|
+| `main` | Versão estável. Código aqui está pronto para implantação. |
+| `develop` | Branch de integração. Features chegam aqui primeiro e são validadas antes de subir para a `main`. |
+| `feat/<descricao>` | Nova funcionalidade. Criada a partir da `develop`. |
+| `fix/<descricao>` | Correção de bug. Criada a partir da `develop`. |
+| `hotfix/<descricao>` | Correção crítica em produção. Criada a partir da `main` e mergeada de volta na `main` e na `develop`. |
 
-Todas as novas funcionalidades, correções de bugs ou melhorias são desenvolvidas em **branches temporárias** criadas a partir da branch `main`.
+A descrição deve usar apenas letras minúsculas e hífens para separar palavras.
 
-Após o desenvolvimento e revisão do código, essas branches são mescladas novamente na branch principal.
+**Exemplos:**
+- `feat/registro-de-atividade`
+- `fix/calculo-progresso-semanal`
+- `hotfix/crash-ao-salvar-meta`
+
+---
+
+# Fluxo de trabalho
+
+O fluxo normal de desenvolvimento segue o caminho:
+
+**`feat/` ou `fix/`** → PR para `develop` → CI passa → merge → PR para `main` → merge
+
+O `hotfix/` é a única exceção: parte da `main` e retorna direto para ela, sendo depois sincronizado com a `develop`.
 
 ---
 
@@ -64,42 +73,38 @@ Qualquer alteração presente na branch principal (`main`) deve estar estável e
 
 ## Criação de uma nova ramificação
 
-Para adicionar uma nova funcionalidade ao projeto, cria-se uma nova ramificação a partir da ramificação principal (`main`).
+Para adicionar uma nova funcionalidade ao projeto, cria-se uma nova ramificação a partir da `develop`.
 
-O nome da ramificação deve representar claramente a funcionalidade ou tarefa que está sendo desenvolvida.
-
-Exemplos de nomenclatura incluem:
-
-- `exercicio-beecrowd-####` (em que #### representa o número da questão do Beecrowd)
-- `trabalho-nomeDoTrabalho`
+O nome da ramificação deve seguir o formato `<tipo>/<descricao>`, representando claramente a natureza e o objetivo da tarefa.
 
 ## Implementação das alterações
 
-Na nova ramificação são realizadas as alterações necessárias no código, como a implementação de funcionalidades ou a resolução de exercícios.
-
-Durante essa etapa, é importante realizar testes para garantir que as alterações funcionem corretamente e não introduzam problemas no projeto.
-
-Recomenda-se a realização de **commits frequentes e descritivos**, organizando o desenvolvimento em pequenas alterações lógicas.
+Na nova ramificação são realizadas as alterações necessárias no código. Recomenda-se a realização de **commits frequentes e descritivos**, organizando o desenvolvimento em pequenas alterações lógicas e seguindo o padrão definido no guia de commits.
 
 ## Abertura de Pull Request
 
-Após a conclusão das alterações, deve-se abrir um **Pull Request** para que o código seja revisado e posteriormente integrado à ramificação principal.
+Após a conclusão das alterações, deve-se abrir um **Pull Request** com destino à `develop`. O título do PR deve descrever claramente o propósito das alterações realizadas.
 
-O Pull Request permite que outros membros da equipe analisem o código, discutam possíveis melhorias e identifiquem eventuais problemas.
+O Pull Request também pode ser utilizado como ferramenta de colaboração quando há dificuldades na implementação de alguma funcionalidade. Nesse caso, o código desenvolvido até o momento pode ser compartilhado para que outros membros da equipe contribuam com sugestões ou soluções.
 
-Além disso, o Pull Request também pode ser utilizado como ferramenta de colaboração quando há dificuldades na implementação de alguma funcionalidade. Nesse caso, o código desenvolvido até o momento pode ser compartilhado para que outros membros da equipe contribuam com sugestões ou soluções.
+## CI e revisão
 
-## Revisão do Pull Request
+O CI roda automaticamente ao abrir o PR, verificando lint, build e type check. Enquanto o CI não passar, o merge não deve ser realizado.
 
-Durante o processo de Pull Request, os membros da equipe podem revisar as alterações propostas, fornecer comentários e sugerir melhorias.
+Após o CI verde, o autor deve verificar o checklist de PR antes de realizar o merge.
 
-As alterações podem ser discutidas e ajustadas até que estejam adequadas para integração ao projeto.
+## Checklist de PR
+
+O CI cobre lint, build e type check automaticamente. Antes do merge, verificar apenas o que o CI não cobre:
+
+- [ ] A descrição do PR está clara e explica o que foi feito
+- [ ] A branch está atualizada com a `develop`
+- [ ] Nenhuma credencial, chave de API ou dado sensível foi incluído no commit
+- [ ] As mensagens de commit seguem o padrão definido
 
 ## Mesclagem do Pull Request
 
-Após a aprovação do Pull Request e a conclusão das revisões necessárias, realiza-se a mesclagem das alterações na ramificação principal (`main`).
-
-Esse processo integra as alterações à versão principal do projeto.
+Após o CI passar e o checklist ser verificado, realiza-se a mesclagem das alterações na branch de destino.
 
 ---
 
@@ -107,12 +112,13 @@ Esse processo integra as alterações à versão principal do projeto.
 
 Uma branch normalmente segue o seguinte ciclo de vida:
 
-1. Criação da branch a partir da `main`
+1. Criação da branch a partir da `develop` (ou `main`, no caso de `hotfix/`)
 2. Desenvolvimento da funcionalidade ou correção
 3. Abertura de Pull Request
-4. Revisão de código
-5. Mesclagem na `main`
-6. Exclusão da branch após a integração
+4. CI passa
+5. Revisão pelo checklist
+6. Mesclagem na branch de destino
+7. Exclusão da branch após a integração
 
 ---
 
